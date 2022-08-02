@@ -1,7 +1,7 @@
 const fs = require("fs"),
-    { readFile } = require("fs/promises"),
+    { readFile } = require("fs").promise,
     {EventEmitter} = require("events"),
-	nodeUtil = require("util"),    
+	nodeUtil = require("util"),
 	PDFJS = require("./lib/pdf"),
     {ParserStream} = require("./lib/parserstream"),
     {kColors, kFontFaces, kFontStyles} = require("./lib/pdfconst");
@@ -13,15 +13,15 @@ class PDFParser extends EventEmitter { // inherit from event emitter
     static get fontFaceDict() { return kFontFaces; }
     static get fontStyleDict() { return kFontStyles; }
 
-    //private static    
+    //private static
     static #maxBinBufferCount = 10;
     static #binBuffer = {};
 
-    //private 
+    //private
     #password = "";
 
     #context = null; // service context object, only used in Web Service project; null in command line
-    
+
     #pdfFilePath = null; //current PDF file to load and parse, null means loading/parsing not started
     #pdfFileMTime = null; // last time the current pdf was modified, used to recognize changes and ignore cache
     #data = null; //if file read success, data is PDF content; if failed, data is "err" object
@@ -32,7 +32,7 @@ class PDFParser extends EventEmitter { // inherit from event emitter
     constructor(context, needRawText, password) {
         //call constructor for super class
         super();
-    
+
         // private
         // service context object, only used in Web Service project; null in command line
         this.#context = context;
@@ -44,8 +44,8 @@ class PDFParser extends EventEmitter { // inherit from event emitter
 
         this.#PDFJS = new PDFJS(needRawText);
         this.#password = password;
-    } 
-    
+    }
+
 	//private methods, needs to invoked by [funcName].call(this, ...)
 	#onPDFJSParseDataReady(data) {
 		if (!data) { //v1.1.2: data===null means end of parsed data
@@ -53,7 +53,7 @@ class PDFParser extends EventEmitter { // inherit from event emitter
 			this.emit("pdfParser_dataReady", this.#data);
 		}
 		else {
-			this.#data = {...this.#data, ...data};            
+			this.#data = {...this.#data, ...data};
 		}
 	}
 
@@ -72,7 +72,7 @@ class PDFParser extends EventEmitter { // inherit from event emitter
         //v1.3.0 the following Readable Stream-like events are replacement for the top two custom events
         this.#PDFJS.on("readable", meta => this.emit("readable", meta));
         this.#PDFJS.on("data", data => this.emit("data", data));
-        this.#PDFJS.on("error", err => this.#onPDFJSParserDataError(err));    
+        this.#PDFJS.on("error", err => this.#onPDFJSParserDataError(err));
 
 		this.#PDFJS.parsePDFData(buffer || PDFParser.#binBuffer[this.binBufferKey], this.#password);
 	}
@@ -99,7 +99,7 @@ class PDFParser extends EventEmitter { // inherit from event emitter
     //public getter
     get data() { return this.#data; }
     get binBufferKey() { return this.#pdfFilePath + this.#pdfFileMTime; }
-        
+
     //public APIs
     createParserStream() {
         return new ParserStream(this, {objectMode: true, bufferSize: 64 * 1024});
@@ -119,7 +119,7 @@ class PDFParser extends EventEmitter { // inherit from event emitter
 
             if (this.#processBinaryCache())
                 return;
-        
+
             PDFParser.#binBuffer[this.binBufferKey] = await readFile(pdfFilePath);
             nodeUtil.p2jinfo(`Load OK: ${pdfFilePath}`);
             this.#startParsingPDF();
@@ -144,7 +144,7 @@ class PDFParser extends EventEmitter { // inherit from event emitter
 	getMergedTextBlocksIfNeeded() { return this.#PDFJS.getMergedTextBlocksIfNeeded(); }
 	getMergedTextBlocksStream() { return ParserStream.createContentStream(this.getMergedTextBlocksIfNeeded()) }
 
-	destroy() { // invoked with stream transform process		
+	destroy() { // invoked with stream transform process
         super.removeAllListeners();
 
 		//context object will be set in Web Service project, but not in command line utility
