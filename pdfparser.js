@@ -1,5 +1,5 @@
 const fs = require("fs"),
-    { readFile } = require("fs").promise,
+    { readFile } = require("fs").promises,
     {EventEmitter} = require("events"),
 	nodeUtil = require("util"),
 	PDFJS = require("./lib/pdf"),
